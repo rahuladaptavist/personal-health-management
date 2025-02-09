@@ -7,45 +7,42 @@ import { useRouter } from "next/navigation";
 
 import { useAuth, useToast } from "@/helpers/hooks";
 import { Button, Input } from "@/components";
-import { ISchemaFormLogin, SchemaFormLogin } from "@/helpers/validation";
+import { ISchemaFormSignup, SchemaFormSignup } from "@/helpers/validation";
 import { AppConstant } from "@/helpers/constants";
-import { useAuthContext } from "@/context";
+import { authApi } from "@/services/local";
 
-export default function Login() {
+export default function Signup() {
   const [loading, setLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ISchemaFormLogin>({
-    resolver: zodResolver(SchemaFormLogin),
+  } = useForm<ISchemaFormSignup>({
+    resolver: zodResolver(SchemaFormSignup),
   });
 
   const { showToast } = useToast();
-  const { awsLogin } = useAuth();
-  const { setAuthData } = useAuthContext();
   const router = useRouter();
-  const onSubmit = async (data: ISchemaFormLogin) => {
+  const { awsSignup } = useAuth();
+
+  const onSubmit = async (data: ISchemaFormSignup) => {
     setLoading(true);
 
     try {
-      const loginResult = await awsLogin({
+      const checkResult = await authApi.check({
         email: data.email,
-        password: data.password,
       });
-      if (!loginResult.exists) {
-        showToast("Incorrect email and password combination", {
+      if (checkResult.exists) {
+        // Ask them to login instead
+        showToast("You are already signed up. Try logging in instead!", {
           type: "error",
         });
-      } else if (!loginResult.verified){
-        // Route to verify screen
-        router.push("/verify");
+        router.push("/login");
+      } else {
+        await awsSignup(data);
       }
-      //Set auth result in provider
-      if(loginResult.authResult){
-        setAuthData(loginResult.authResult);
-      }
+
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       showToast(`Error: ${error.message || "Signup failed"}`, {
@@ -69,15 +66,15 @@ export default function Login() {
               {AppConstant.NAME}
             </a>
             <h1 className="mb-2 text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">
-              Welcome back
+              Create your account
             </h1>
             <p className="text-sm font-light text-gray-500 dark:text-gray-300">
-              Your health companion. Don&apos;t have an account?{" "}
+              Your health companion. Already have an account?{" "}
               <Link
-                href="/signup"
+                href="/login"
                 className="font-medium text-primary-600 hover:underline dark:text-primary-500"
               >
-                Sign up
+                Login here
               </Link>
               .
             </p>
@@ -85,6 +82,32 @@ export default function Login() {
               className="mt-4 space-y-6 sm:mt-6"
               onSubmit={handleSubmit(onSubmit)}
             >
+              <div className="grid gap-6 sm:grid-cols-2">
+                <div>
+                  <Input
+                    id="firstName"
+                    inputProps={{
+                      type: "text",
+                      placeholder: "e.g. John",
+                      ...register("firstName"),
+                    }}
+                    label="First Name"
+                    errorMessage={errors.firstName?.message}
+                  />
+                </div>
+                <div>
+                  <Input
+                    id="lastName"
+                    inputProps={{
+                      type: "text",
+                      placeholder: "e.g. Wick",
+                      ...register("lastName"),
+                    }}
+                    label="Last Name"
+                    errorMessage={errors.lastName?.message}
+                  />
+                </div>
+              </div>
               <div className="grid">
                 <Input
                   id="email"
@@ -109,31 +132,52 @@ export default function Login() {
                   errorMessage={errors.password?.message}
                 />
               </div>
-              <div className="flex items-center justify-between">
+              <div className="grid">
+                <Input
+                  id="confirmPassword"
+                  inputProps={{
+                    type: "password",
+                    placeholder: "••••••••",
+                    ...register("confirmPassword"),
+                  }}
+                  label="Confirm Password"
+                  errorMessage={errors.confirmPassword?.message}
+                />
+              </div>
+              <div className="space-y-3">
                 <div className="flex items-start">
                   <div className="flex items-center h-5">
                     <input
-                      id="remember"
-                      aria-describedby="remember"
+                      id="terms"
+                      aria-describedby="terms"
                       type="checkbox"
                       className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
                     />
                   </div>
                   <div className="ml-3 text-sm">
                     <label
-                      htmlFor="remember"
-                      className="text-gray-500 dark:text-gray-300"
+                      htmlFor="terms"
+                      className="font-light text-gray-500 dark:text-gray-300"
                     >
-                      Remember me
+                      By signing up, you are creating a Flowbite account, and
+                      you agree to Flowbite&apos;s{" "}
+                      <a
+                        className="font-medium text-primary-600 dark:text-primary-500 hover:underline"
+                        href="#"
+                      >
+                        Terms of Use
+                      </a>{" "}
+                      and{" "}
+                      <a
+                        className="font-medium text-primary-600 dark:text-primary-500 hover:underline"
+                        href="#"
+                      >
+                        Privacy Policy
+                      </a>
+                      .
                     </label>
                   </div>
                 </div>
-                <a
-                  href="#"
-                  className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
-                >
-                  Forgot password?
-                </a>
               </div>
               <Button
                 title="Create an account"

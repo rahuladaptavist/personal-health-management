@@ -3,49 +3,33 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import Link from "next/link";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useRouter } from "next/navigation";
 
 import { useAuth, useToast } from "@/helpers/hooks";
 import { Button, Input } from "@/components";
-import { ISchemaFormLogin, SchemaFormLogin } from "@/helpers/validation";
+import {
+  ISchemaFormResetPassword,
+  SchemaFormResetPassword,
+} from "@/helpers/validation";
 import { AppConstant } from "@/helpers/constants";
-import { useAuthContext } from "@/context";
 
-export default function Login() {
+export default function ResetPassword() {
   const [loading, setLoading] = useState(false);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<ISchemaFormLogin>({
-    resolver: zodResolver(SchemaFormLogin),
+  } = useForm<ISchemaFormResetPassword>({
+    resolver: zodResolver(SchemaFormResetPassword),
   });
 
   const { showToast } = useToast();
-  const { awsLogin } = useAuth();
-  const { setAuthData } = useAuthContext();
-  const router = useRouter();
-  const onSubmit = async (data: ISchemaFormLogin) => {
+  const { awsLogin, awsSignup } = useAuth();
+
+  const onSubmit = async (data: ISchemaFormResetPassword) => {
     setLoading(true);
 
     try {
-      const loginResult = await awsLogin({
-        email: data.email,
-        password: data.password,
-      });
-      if (!loginResult.exists) {
-        showToast("Incorrect email and password combination", {
-          type: "error",
-        });
-      } else if (!loginResult.verified){
-        // Route to verify screen
-        router.push("/verify");
-      }
-      //Set auth result in provider
-      if(loginResult.authResult){
-        setAuthData(loginResult.authResult);
-      }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {
       showToast(`Error: ${error.message || "Signup failed"}`, {
@@ -69,15 +53,15 @@ export default function Login() {
               {AppConstant.NAME}
             </a>
             <h1 className="mb-2 text-2xl font-bold leading-tight tracking-tight text-gray-900 dark:text-white">
-              Welcome back
+              Create new password
             </h1>
             <p className="text-sm font-light text-gray-500 dark:text-gray-300">
-              Your health companion. Don&apos;t have an account?{" "}
+              Your health companion. Already have an account?{" "}
               <Link
-                href="/signup"
+                href="/login"
                 className="font-medium text-primary-600 hover:underline dark:text-primary-500"
               >
-                Sign up
+                Login here
               </Link>
               .
             </p>
@@ -87,14 +71,14 @@ export default function Login() {
             >
               <div className="grid">
                 <Input
-                  id="email"
+                  id="code"
                   inputProps={{
-                    type: "email",
-                    placeholder: "name@company.com",
-                    ...register("email"),
+                    type: "number",
+                    placeholder: "Code received on your email",
+                    ...register("code"),
                   }}
-                  label="Email"
-                  errorMessage={errors.email?.message}
+                  label="Verification Code"
+                  errorMessage={errors.code?.message}
                 />
               </div>
               <div className="grid">
@@ -109,37 +93,51 @@ export default function Login() {
                   errorMessage={errors.password?.message}
                 />
               </div>
-              <div className="flex items-center justify-between">
-                <div className="flex items-start">
-                  <div className="flex items-center h-5">
-                    <input
-                      id="remember"
-                      aria-describedby="remember"
-                      type="checkbox"
-                      className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
-                    />
-                  </div>
-                  <div className="ml-3 text-sm">
-                    <label
-                      htmlFor="remember"
-                      className="text-gray-500 dark:text-gray-300"
-                    >
-                      Remember me
-                    </label>
-                  </div>
-                </div>
-                <a
-                  href="#"
-                  className="text-sm font-medium text-primary-600 hover:underline dark:text-primary-500"
-                >
-                  Forgot password?
-                </a>
+              <div className="grid">
+                <Input
+                  id="confirmPassword"
+                  inputProps={{
+                    type: "password",
+                    placeholder: "••••••••",
+                    ...register("confirmPassword"),
+                  }}
+                  label="Confirm Password"
+                  errorMessage={errors.confirmPassword?.message}
+                />
               </div>
-              <Button
-                title="Create an account"
-                type="submit"
-                loading={loading}
-              />
+              <div className="flex items-start">
+                <div className="flex items-center h-5">
+                  <input
+                    id="terms"
+                    aria-describedby="terms"
+                    type="checkbox"
+                    className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-primary-300 dark:bg-gray-700 dark:border-gray-600 dark:focus:ring-primary-600 dark:ring-offset-gray-800"
+                  />
+                </div>
+                <div className="ml-3 text-sm">
+                  <label
+                    htmlFor="terms"
+                    className="text-gray-500 dark:text-gray-300"
+                  >
+                    I agree to Zenvy{" "}
+                    <a
+                      href="#"
+                      className="font-medium text-primary-600 dark:text-primary-500 hover:underline"
+                    >
+                      Terms of Use
+                    </a>{" "}
+                    and{" "}
+                    <a
+                      href="#"
+                      className="font-medium text-primary-600 dark:text-primary-500 hover:underline"
+                    >
+                      Privacy Policy
+                    </a>
+                    .
+                  </label>
+                </div>
+              </div>
+              <Button title="Reset password" type="submit" loading={loading} />
             </form>
           </div>
         </div>
